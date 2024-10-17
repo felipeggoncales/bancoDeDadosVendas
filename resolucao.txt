@@ -1,0 +1,98 @@
+/* 1 - Alterar tabela débito para alterar situação débito */
+
+UPDATE DEBITOS d
+SET SITUACAO_DEBITO = 'Atrasado'
+WHERE (CURRENT_DATE > d.DATAVENCIMENTO) 
+  AND (d.SITUACAO_DEBITO NOT IN ('Negociado', 'Pago'));
+
+/* 2 - Alterar tabela débito para alterar situação débito */
+ 
+UPDATE DEBITOS D
+SET SITUACAO_DEBITO = 'Pendente'
+WHERE (CURRENT_DATE <= d.DATAVENCIMENTO) 
+  AND (SITUACAO_DEBITO != 'Pago');
+
+ /* 3 - Alterar campo data de vencimento da tabela débito */
+ 
+UPDATE DEBITOS d
+SET d.DATAVENCIMENTO = DATEADD(-5 YEAR TO d.DATAVENCIMENTO)
+WHERE SITUACAO_DEBITO = 'Negociado';
+
+/* 4 - Selecionar nome, email e telefone de todas as pessoas */
+
+SELECT p.NOME, p.EMAIL, p.TELEFONE 
+FROM PESSOA p 
+
+/* 5 - Listar produtos com valor unitário acima de R$100 */
+
+SELECT *
+FROM PRODUTO p 
+WHERE PRECO_UNITARIO > 100
+
+/* 6 - Selecionar todas as vendas realizadas em determinado período */
+
+SELECT *
+FROM VENDA v 
+WHERE v.DATA_VENDA = CURRENT_DATE;
+
+/* 7 - Mostrar nome, data de nascimento e idade dos fornecedores que não tem produtos em estoque */
+
+SELECT p.NOME
+	 , p.DATA_NASCIMENTO
+	 , (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM p.DATA_NASCIMENTO)) AS IDADE
+FROM FORNECEDOR f 
+INNER JOIN PESSOA p ON p.ID_PESSOA = f.ID_PESSOA 
+WHERE f.ID_FORNECEDOR NOT IN (SELECT p2.ID_FORNECEDOR
+							  FROM PRODUTO p2
+							  WHERE p2.id_fornecedor = f.ID_FORNECEDOR)
+							  
+UNION	  											  
+
+SELECT p.NOME
+	 , p.DATA_NASCIMENTO
+	 , (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM p.DATA_NASCIMENTO)) AS IDADE
+FROM FORNECEDOR f 
+INNER JOIN PESSOA p ON p.ID_PESSOA = f.ID_PESSOA 
+LEFT JOIN PRODUTO p2 ON p2.ID_FORNECEDOR = f.ID_FORNECEDOR
+WHERE p2.QUANTIDADE_ESTOQUE = 0
+
+
+/* 8 - Listar clientes que já realizaram compras com débitos vencidos */
+					  
+SELECT DISTINCT p.*
+FROM CLIENTE c 
+LEFT JOIN DEBITOS d ON d.ID_CLIENTE = c.ID_CLIENTE 
+LEFT JOIN PESSOA p ON p.ID_PESSOA = c.ID_PESSOA 
+WHERE d.SITUACAO_DEBITO = 'Atrasado'
+
+/* 9 - Laís faiou */
+
+/* 10 - Selecionar os 10 maiores devedores */
+
+SELECT FIRST 10
+		d.ID_CLIENTE,
+		p.NOME,
+		(EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM p.DATA_NASCIMENTO)) AS IDADE,
+		(SELECT SUM(d2.VALOR_TOTAL)
+      	   FROM DEBITOS d2
+      	   WHERE d2.ID_CLIENTE = d.ID_CLIENTE 
+      	   AND d2.SITUACAO_DEBITO NOT IN ('Pago', 'Negociado')) AS DEBITO_VENCIDO,
+      	(SELECT SUM(d3.VALOR_TOTAL)
+      	   FROM DEBITOS d3
+      	   WHERE d3.ID_CLIENTE = d.ID_CLIENTE 
+       	   AND d3.SITUACAO_DEBITO IN ('Pago', 'Negociado')) AS DEBITO_PAGO
+FROM DEBITOS d
+LEFT JOIN CLIENTE c ON c.ID_CLIENTE = d.ID_CLIENTE 
+LEFT JOIN PESSOA p ON p.ID_PESSOA = c.ID_PESSOA
+GROUP BY d.ID_CLIENTE, p.NOME, IDADE
+ORDER BY DEBITO_VENCIDO DESC
+
+/* 11 - Atualizar o preço unitário de produtos com estoque inferior a 10 unidades para mais 10% */
+
+UPDATE PRODUTO 
+SET PRECO_UNITARIO = PRECO_UNITARIO + (PRECO_UNITARIO * 0.1)
+WHERE QUANTIDADE_ESTOQUE < 10
+
+/* 12 - Laís faiou again */
+
+
