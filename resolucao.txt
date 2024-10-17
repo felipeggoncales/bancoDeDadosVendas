@@ -76,11 +76,11 @@ SELECT FIRST 10
 		(SELECT SUM(d2.VALOR_TOTAL)
       	   FROM DEBITOS d2
       	   WHERE d2.ID_CLIENTE = d.ID_CLIENTE 
-      	   AND d2.SITUACAO_DEBITO NOT IN ('Pago', 'Negociado')) AS DEBITO_VENCIDO,
-      	(SELECT SUM(d3.VALOR_TOTAL)
+      	   AND d2.DATAVENCIMENTO < CURRENT_DATE) AS DEBITO_VENCIDO,
+      	COALESCE ((SELECT SUM(d3.VALOR_TOTAL)
       	   FROM DEBITOS d3
       	   WHERE d3.ID_CLIENTE = d.ID_CLIENTE 
-       	   AND d3.SITUACAO_DEBITO IN ('Pago', 'Negociado')) AS DEBITO_PAGO
+       	   AND d3.SITUACAO_DEBITO = 'Pago'), 0) AS DEBITO_PAGO
 FROM DEBITOS d
 LEFT JOIN CLIENTE c ON c.ID_CLIENTE = d.ID_CLIENTE 
 LEFT JOIN PESSOA p ON p.ID_PESSOA = c.ID_PESSOA
@@ -95,4 +95,9 @@ WHERE QUANTIDADE_ESTOQUE < 10
 
 /* 12 - Laís faiou again */
 
+/* 13 - Alterar todos os débitos que estão como atrasados para pagos se o mesmo ter o registro na tabela pagamento */
 
+UPDATE DEBITOS d
+SET SITUACAO_DEBITO = 'Pago'
+WHERE d.ID_VENDA = (SELECT p.ID_VENDA
+					FROM PAGAMENTO p)
